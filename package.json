@@ -2,22 +2,16 @@
   "name": "scaffold-lqf",
   "version": "0.0.0",
   "description": "一个简单的脚手架",
-  "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "prepare": "husky install",
-    "dev:create": "npx ts-node packages/commander/index.ts create"
+    "prepare": "husky install"
   },
   "keywords": [
     "scaffold"
   ],
   "author": "linqingfeng",
   "license": "MIT",
-  "dependencies": {
-    "@inquirer/prompts": "^2.3.0",
-    "@inquirer/select": "^1.2.3",
-    "commander": "^11.0.0"
-  },
   "devDependencies": {
     "@commitlint/cli": "^17.6.6",
     "@commitlint/config-conventional": "^17.6.6",
