@@ -3,7 +3,10 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { Command } from 'commander';
 import { input, confirm } from '@inquirer/prompts';
+import download from 'download-git-repo';
+import template from './template';
 
+const templateEnum = Object.keys(template);
 const pkg = JSON.parse(
   fs.readFileSync(new URL('./package.json', import.meta.url)).toString()
 );
@@ -19,7 +22,8 @@ program
   .command('create')
   .description('create a project')
   .argument('<string>', 'the project name')
-  .option('-t, --target <char>', 'store resource code', '')
+  .option('-s, --store <char>', 'store resource code', '')
+  .option('-t, --template <template>', 'choice your framwork', '')
   .action((name, options) => {
     createProject(name, options);
   });
@@ -27,21 +31,29 @@ program
 const createProject = async (projectName: string, options: any) => {
   const isNeedEslint = await confirm({ message: 'install eslint?' });
   const isEnableTypeScript = await confirm({ message: 'support typescript?' });
-  const root = generatedUrl(options.target, projectName);
-  const templateSrc = path.resolve(
-    fileURLToPath(import.meta.url),
-    '../..',
-    'template'
-  );
-  // 复制模板
-  copy(templateSrc, root);
+  console.log(options.template);
+  if (templateEnum.includes(options.template)) {
+    const root = generatedUrl(projectName);
+    const templateSrc = path.resolve(
+      fileURLToPath(import.meta.url),
+      '../../boilerplate',
+      `template-${options.template}`
+    );
+
+    console.log(templateSrc);
+    // 复制模板
+    copy(templateSrc, root);
+  } else {
+    // 通过网络下载
+    const repo = /^(https).+/i.test(options.template)
+      ? options.template
+      : `https://${options.template}`;
+    downloadBoilerplate(repo);
+  }
 };
 
-const generatedUrl = (target: string, projectName: string) => {
-  const targetFullUrl = target
-    ? path.join(target, projectName)
-    : path.resolve(process.cwd(), projectName);
-  return targetFullUrl;
+const generatedUrl = (projectName: string) => {
+  return path.resolve(process.cwd(), projectName);
 };
 
 const copy = (src: string, destSrc: string) => {
@@ -60,6 +72,14 @@ const copyDir = (srcDir: string, destDir: string) => {
     const destFile = path.resolve(destDir, file);
     copy(srcFile, destFile);
   }
+};
+
+const downloadBoilerplate = (repo: string) => {
+  download(repo, '.', { clone: true }, (error) => {
+    if (error) {
+      throw new Error('下载出错');
+    }
+  });
 };
 
 program.parse();
