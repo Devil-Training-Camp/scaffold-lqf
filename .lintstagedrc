@@ -1,4 +1,9 @@
 {
-  "*.{js,ts,css,html,json,yaml}": "prettier --write",
-  "*.{js,ts}": "eslint --fix"
+  "*.{js,ts,css,html,json,yaml}": "prettier --cache --write",
+  "packages/*/{src,types}/**/*.ts": [
+    "eslint --cache --fix"
+  ],
+  "packages/**/*.d.ts": [
+    "eslint --cache --fix"
+  ],
 }

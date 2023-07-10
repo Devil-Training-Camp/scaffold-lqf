@@ -11,7 +11,7 @@ export default {
     prettier: false,
     bundler: 'none',
   },
-  default: {
+  vanilla: {
     eslint: false,
     typescript: false,
     prettier: false,

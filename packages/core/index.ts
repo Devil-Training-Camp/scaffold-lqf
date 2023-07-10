@@ -2,9 +2,14 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { Command } from 'commander';
-import { input, confirm } from '@inquirer/prompts';
+import { confirm } from '@inquirer/prompts';
+import select from '@inquirer/select';
+import degit from 'degit';
+import ora from 'ora';
 import download from 'download-git-repo';
 import template from './template';
+import { choiceBundler, installPrettier } from './installPackage';
+import chalk from 'chalk';
 
 const templateEnum = Object.keys(template);
 const pkg = JSON.parse(
@@ -29,26 +34,55 @@ program
   });
 
 const createProject = async (projectName: string, options: any) => {
-  const isNeedEslint = await confirm({ message: 'install eslint?' });
-  const isEnableTypeScript = await confirm({ message: 'support typescript?' });
-  console.log(options.template);
-  if (templateEnum.includes(options.template)) {
-    const root = generatedUrl(projectName);
+  if (options.template === '') {
+    options.template = await select({
+      message: 'Select a framwork',
+      choices: [
+        {
+          name: 'vanilla',
+          value: 'vanilla',
+        },
+        {
+          name: 'vue',
+          value: 'vue',
+        },
+        {
+          name: 'react',
+          value: 'react',
+          disabled: true,
+        },
+      ],
+    });
+  }
+
+  let property: string;
+  if (templateEnum.includes((property = options.template))) {
+    template[property].eslint = await confirm({ message: 'install eslint?' });
+    template[property].prettier = await confirm({
+      message: 'install prettier?',
+    });
+    template[property].typescript = await confirm({
+      message: 'support typescript?',
+    });
+
+    const bundler = await choiceBundler();
+
+    const destDir = generatedUrl(projectName);
     const templateSrc = path.resolve(
       fileURLToPath(import.meta.url),
       '../../boilerplate',
-      `template-${options.template}`
+      `template-${property}${template[property].typescript ? '-ts' : ''}`
     );
 
-    console.log(templateSrc);
     // 复制模板
-    copy(templateSrc, root);
+    copy(templateSrc, destDir);
+
+    if (template[property].prettier) {
+      process.chdir(projectName);
+      installPrettier(bundler, destDir);
+    }
   } else {
-    // 通过网络下载
-    const repo = /^(https).+/i.test(options.template)
-      ? options.template
-      : `https://${options.template}`;
-    downloadBoilerplate(repo);
+    downloadBoilerplate(options.template, projectName);
   }
 };
 
@@ -74,11 +108,12 @@ const copyDir = (srcDir: string, destDir: string) => {
   }
 };
 
-const downloadBoilerplate = (repo: string) => {
-  download(repo, '.', { clone: true }, (error) => {
-    if (error) {
-      throw new Error('下载出错');
-    }
+const downloadBoilerplate = (repo: string, projectName: string) => {
+  const emitter = degit(repo);
+
+  const spinner = ora(`Download ${chalk.red(repo)}`).start();
+  emitter.clone(generatedUrl(projectName)).then(() => {
+    spinner.succeed();
   });
 };
 
